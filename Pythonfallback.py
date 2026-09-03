@@ -22,25 +22,22 @@ class RAGService:
         context = ""
         source_used = ResponseSource.FULL_PIPELINE
         
-        # STEP 1: Context Retrieval with Fallback ---
+        # STEP 1: Context Retrieval with Fallback 
         try:
             # Attempt primary vector database retrieval
             documents = await self.vector_db.retrieve_relevant_docs(query)
             context = "\n".join(documents)
         except Exception as e:
             logging.error(f"Vector DB failed. Falling back to local keyword index: {e}")
-            # Fallback to local keyword search (e.g., an in-memory BM25 or cache)
             context = self.local_cache.keyword_search(query)
             source_used = ResponseSource.BACKUP_SEARCH
             
-        # STEP 2: Generation with Fallback ---
+        # STEP 2: Generation with Fallback 
         try:
-            # Attempt primary LLM generation
             ai_response = await self.llm_client.generate_answer(query=query, context=context)
             return RAGResponse(text=ai_response, source=source_used)
         except Exception as e:
             logging.error(f"LLM generation failed. Returning generic helpful fallback: {e}")
-            # Ultimate safety fallback if generation completely breaks
             fallback_text = (
                 f"I'm having trouble connecting to my primary knowledge base right now. "
                 f"Regarding your question '{query}', please check your connection and try again shortly."
